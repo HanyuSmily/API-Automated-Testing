@@ -1,0 +1,20 @@
+# 虚拟环境（镜像内自行安装依赖，不需要本地 venv）
+.venv/
+
+# 测试报告与缓存（每次运行重新生成）
+reports/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+
+# 版本控制与 IDE 配置
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# GitHub Actions 配置（CI 专用，镜像内不需要）
+.github/
+
+# 数据文件中的临时产物
+*.log

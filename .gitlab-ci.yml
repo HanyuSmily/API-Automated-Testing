@@ -1,0 +1,105 @@
+# ============================================================================
+# GitLab CI/CD 配置：Merge Request 提交时自动触发测试
+# ============================================================================
+
+# 基础镜像：Python 3.10 精简版（与项目 Python 版本一致）
+image: python:3.10-slim
+
+# 流水线触发规则：仅在这些场景下运行
+workflow:
+  rules:
+    # 创建/更新 Merge Request 时触发（核心场景）
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # 合并到 main 分支后触发
+    - if: $CI_COMMIT_BRANCH == "main"
+    # 支持手动在 GitLab UI 触发
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+# 全局变量
+variables:
+  # pip 缓存目录（配合 cache 加速）
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # 默认测试环境（可在 GitLab CI/CD Variables 中覆盖为 qa/prod）
+  TEST_ENV: "dev"
+
+# 缓存配置：缓存 pip 下载的包，加速后续流水线
+cache:
+  key:
+    files:
+      - requirements.txt   # 依赖文件变化时缓存失效
+    prefix: pip-$CI_COMMIT_REF_SLUG
+  paths:
+    - .cache/pip
+
+# 定义流水线阶段
+stages:
+  - lint
+  - test
+
+# ============================================================================
+# 阶段一：代码检查（快速失败，节省时间）
+# ============================================================================
+syntax-check:
+  stage: lint
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+  script:
+    # 编译检查：确保所有 Python 文件无语法错误
+    - python -m py_compile $(find . -name "*.py" -not -path "./.venv/*" -not -path "./reports/*")
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# ============================================================================
+# 阶段二：运行自动化测试（核心任务）
+# ============================================================================
+run-tests:
+  stage: test
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+    # 创建报告目录
+    - mkdir -p reports
+  script:
+    # 运行 pytest，生成 HTML 报告 + JUnit XML（供 GitLab 测试报告展示）
+    # pytest.ini 中已配置 --html 和 --alluredir，此处追加 junitxml
+    - pytest --tb=short -v --junitxml=reports/junit.xml
+  after_script:
+    - echo "测试执行完毕，报告已生成"
+  # 制品：无论成功失败都上传报告
+  artifacts:
+    when: always
+    paths:
+      - reports/              # HTML 报告 + Allure 数据
+    reports:
+      junit: reports/junit.xml  # GitLab 原生测试报告集成
+    expire_in: 1 week          # 报告保留 1 周
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================================================
+# 可选：QA 环境冒烟测试（仅 main 分支合并后触发）
+# ============================================================================
+smoke-qa:
+  stage: test
+  variables:
+    TEST_ENV: "qa"   # 覆盖为 QA 环境
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+    - mkdir -p reports
+  script:
+    # 仅运行冒烟标记的测试
+    - pytest -m "smoke" --tb=short -v --junitxml=reports/smoke_junit.xml
+  artifacts:
+    when: always
+    paths:
+      - reports/
+    reports:
+      junit: reports/smoke_junit.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  # 允许冒烟测试失败（不阻塞主流程）
+  allow_failure: true

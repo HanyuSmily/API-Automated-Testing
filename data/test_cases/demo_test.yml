@@ -1,0 +1,15 @@
+- config:
+    name: "测试 登录接口"
+    base_url: "https://petstore.swagger.io/#/user/loginUser"
+    variables:
+      user_id:123
+
+- test:
+    name: "测试GET 请求"
+    request:
+      url: " https://petstore.swagger.io/v2/user/login?username=catcat&password=123456"
+      method: "GET"
+    validate:
+      - check: "status_code"
+        assert_type: "eq"
+        expect: 200

@@ -1,0 +1,19 @@
+# 核心框架
+httprunner==4.3.5
+loguru==0.4.1
+requests==2.34.2
+pydantic==1.8.2
+
+# 数据驱动：CSV/JSON/Excel 解析
+openpyxl==3.1.5
+PyYAML==6.0.3
+
+# 断言：JSON Schema 校验
+jsonschema==4.26.0
+
+# 测试运行与报告
+pytest==7.4.4
+pytest-html==3.2.0
+pytest-metadata==3.1.1
+pytest-rerunfailures==14.0
+allure-pytest==2.16.0
