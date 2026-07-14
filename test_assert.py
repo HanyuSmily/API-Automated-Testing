@@ -27,13 +27,13 @@ class TestAssertUtilsBasic:
 
     def test_contained_by_pass(self):
         AssertUtils.validate("apple", ["apple", "banana"], "contained_by")
-
+    #比较
     def test_gt_ge_lt_le(self):
         AssertUtils.validate(10, 5, "gt")
         AssertUtils.validate(10, 10, "ge")
         AssertUtils.validate(5, 10, "lt")
         AssertUtils.validate(10, 10, "le")
-
+    #长度
     def test_len_assertions(self):
         AssertUtils.validate([1, 2, 3], 3, "len_eq")
         AssertUtils.validate([1, 2, 3], 2, "len_gt")
@@ -114,7 +114,7 @@ class TestJsonSchema:
                 "name": {"type": "string"},
             },
         }
-        actual = {"id": 1}
+        actual = {"id": 1}#缺少必填的name、age
         with pytest.raises(AssertionError) as exc_info:
             AssertUtils.validate(actual, schema, "json_schema")
         assert "name" in str(exc_info.value)
